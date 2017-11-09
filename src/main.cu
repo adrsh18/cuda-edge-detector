@@ -20,39 +20,88 @@ __global__ void img_kernel(unsigned char *d_inputImage, unsigned char *d_outputI
     return;
 }
 
-__global__ void sobel_kernel(unsigned char *d_tempImage, unsigned char *d_outputImage, int rows, int cols, int threshold) {
-    int x_filter[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
-    int y_filter[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
-
-    float gradient = 0.0, gx = 0.0, gy = 0.0;
+__global__ void nms_kernel(unsigned char *d_imageGradient, unsigned char *d_gradientAngle, unsigned char *d_outputImage, int rows, int cols) {
     int c = blockIdx.y * blockDim.y + threadIdx.y;
     int r = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int mid = 1;
+    int idx = r*cols+c, neighborOne = idx, neighborTwo = idx;
+    if (r >= rows || c >= cols) {
+        return;
+    }
+
+    if (r < 1 || r >= rows-1 || c < 1 || c >= cols-1) {
+        d_outputImage[idx] = (unsigned char) 0;
+    } else {
+        switch(d_gradientAngle[idx]) {
+            case 0:
+                neighborOne = idx - 1; neighborTwo = idx + 1;
+                break;
+            
+            case 45:
+                neighborOne = (r-1)*cols+c-1; neighborTwo = (r+1)*cols+c+1;
+                break;
+
+            case 90:
+                neighborOne = idx - cols; neighborTwo = idx + cols;
+                break;
+
+            default:
+                neighborOne = (r-1)*cols+c+1; neighborTwo = (r+1)*cols+c-1;
+                break;
+
+        }
+        if (d_imageGradient[idx] > d_imageGradient[neighborOne] && d_imageGradient[idx] > d_imageGradient[neighborTwo]) {
+            d_outputImage[idx] = d_imageGradient[idx];
+        } else {
+            d_outputImage[idx] = (unsigned char) 0;
+        }
+    }
+}
+
+__global__ void sobel_kernel(unsigned char *d_filteredImage, unsigned char *d_imageGradient, unsigned char *d_gradientAngle, int rows, int cols, int threshold) {
+    int x_filter[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+    int y_filter[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
+
+    float gradient = 0.0, gx = 0.0, gy = 0.0, angle = 0.0;
+    int c = blockIdx.y * blockDim.y + threadIdx.y;
+    int r = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int mid = 1, idx = r*cols+c;
 
     if (r >= rows || c >= cols) {
          return;
     }
 
     if (r < mid || r >= rows-mid || c < mid || c >= cols-mid) {
-        d_outputImage[r*cols+c] = (unsigned char) 0;
+        d_imageGradient[idx] = (unsigned char) 0;
+        d_gradientAngle[idx] = (unsigned char) 0;
     } else {
         for (int i = -mid; i <= mid; i++) {
             for (int j = -mid; j <= mid; j++) {
-                int pxl = d_tempImage[(r+i)*cols + (c+j)];
+                int pxl = d_filteredImage[(r+i)*cols + (c+j)];
                 gx += pxl * x_filter[(i+mid)*3 + (mid+j)];
                 gy += pxl * y_filter[(i+mid)*3 + (mid+j)];
             }
         }
         __syncthreads();
         gradient = sqrtf(powf(gx, 2.0) + powf(gy, 2.0));
-        if (gradient > threshold) gradient = 255.0;
-        if (gradient <= threshold) gradient = 0.0;
-        d_outputImage[r*cols+c] = (unsigned char) gradient;
+        angle = atan2f(gy, gx);
+        angle = angle/3.14159 * 180;
+
+        if (gradient > 255.0) gradient = 255.0;
+        if (gradient <= 0) gradient = 0.0;
+
+        if ((angle >= -22.5 && angle < 22.5) || (angle <= -157.5 || angle > 157.5)) angle = 0;
+	else if ((angle >= 22.5 && angle < 67.5) || (angle >= -157.5 && angle < -112.5)) angle = 45;
+        else if ((angle >= 67.5 && 112.5) || (angle >= -112.5 && angle < -67.5)) angle = 90;
+        else angle = 135;
+
+        d_gradientAngle[idx] = (unsigned char) angle;
+        d_imageGradient[idx] = (unsigned char) gradient;
     }
 }
 
-__global__ void convolve_2d(unsigned char *d_inputImage, unsigned char *d_tempImage, int rows, int cols, float *d_filter, int filter_rows, int filter_cols, float normalizer) {
+__global__ void convolve_2d(unsigned char *d_inputImage, unsigned char *d_filteredImage, int rows, int cols, float *d_filter, int filter_rows, int filter_cols, float normalizer) {
 
     float sum = 0;
     int c = blockIdx.y * blockDim.y + threadIdx.y;
@@ -65,7 +114,7 @@ __global__ void convolve_2d(unsigned char *d_inputImage, unsigned char *d_tempIm
     }
     
     if ( r < mid || r >= rows-mid || c < mid || c >= cols-mid) {
-        d_tempImage[r*cols+c] = (unsigned char) 0;
+        d_filteredImage[r*cols+c] = (unsigned char) 0;
     } else {
         for (int i = -mid; i <= mid; i++) {
             for (int j = -mid; j <= mid; j++) {
@@ -79,11 +128,11 @@ __global__ void convolve_2d(unsigned char *d_inputImage, unsigned char *d_tempIm
         sum = abs(sum) / normalizer;
         if (sum > 255) sum = 255;
         if (sum < 0) sum = 0;
-        d_tempImage[r*cols+c] = (unsigned char) sum;
+        d_filteredImage[r*cols+c] = (unsigned char) sum;
     }
 }
 
-void sobel_operator(unsigned char *d_tempImage, unsigned char *d_outputImage, int rows, int cols) {
+void sobel_operator(unsigned char *d_filteredImage, unsigned char *d_imageGradient, unsigned char *d_gradientAngle, int rows, int cols) {
     int block_size = 16;
 
     const dim3 blockSize(block_size, block_size, 1);
@@ -92,15 +141,32 @@ void sobel_operator(unsigned char *d_tempImage, unsigned char *d_outputImage, in
     const dim3 gridSize(xCount, yCount, 1);
 
     printf("About to launch sobel kernel on GPU\n");
-    sobel_kernel<<<gridSize, blockSize>>>(d_tempImage, d_outputImage, rows, cols, 30);
+    sobel_kernel<<<gridSize, blockSize>>>(d_filteredImage, d_imageGradient, d_gradientAngle, rows, cols, 30);
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error: %s\n", cudaGetErrorString(err));
     cudaDeviceSynchronize();
 }
+
+void non_maxima_suppression(unsigned char *d_imageGradient, unsigned char *d_gradientAngle, unsigned char *d_outputImage, int rows, int cols) {
+    int block_size = 16;
+
+    const dim3 blockSize(block_size, block_size, 1);
+    int xCount = rows / block_size + 1;
+    int yCount = cols / block_size + 1;
+    const dim3 gridSize(xCount, yCount, 1);
+
+    printf("About to launch non maxima suppression kernel\n");
+    nms_kernel<<<gridSize, blockSize>>>(d_imageGradient, d_gradientAngle, d_outputImage, rows, cols);
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess)
+        printf("Error: %s\n", cudaGetErrorString(err));
+    cudaDeviceSynchronize();
+}    
     
-void gaussian_blur(unsigned char *d_inputImage, unsigned char *d_tempImage, int rows, int cols) {
+void gaussian_blur(unsigned char *d_inputImage, unsigned char *d_filteredImage, int rows, int cols) {
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, 128*1024*1024);
 
     int block_size = 16;
@@ -123,7 +189,7 @@ void gaussian_blur(unsigned char *d_inputImage, unsigned char *d_tempImage, int 
 
     //img_kernel<<<gridSize, blockSize>>>(d_inputImage, d_outputImage, rows, cols);
     printf("About to lauch gaussian kernel on GPU\n");
-    convolve_2d<<<gridSize, blockSize>>>(d_inputImage, d_tempImage, rows, cols, d_filter, 5, 5, 159.0);
+    convolve_2d<<<gridSize, blockSize>>>(d_inputImage, d_filteredImage, rows, cols, d_filter, 5, 5, 159.0);
     
     cudaFree(d_filter);
     err = cudaGetLastError();
@@ -132,14 +198,24 @@ void gaussian_blur(unsigned char *d_inputImage, unsigned char *d_tempImage, int 
     printf("Gaussian kernel completed\n");
 }
 
-void detect_edges(unsigned char *d_inputImage, unsigned char *d_tempImage, unsigned char *d_outputImage, int rows, int cols) {
-    gaussian_blur(d_inputImage, d_tempImage, rows, cols);
-    sobel_operator(d_tempImage, d_outputImage, rows, cols);
+void detect_edges(unsigned char *d_inputImage, unsigned char *d_outputImage, int rows, int cols) {
+    unsigned char *d_filteredImage, *d_imageGradient, *d_gradientAngle;
+    
+    cudaMalloc((void**)&d_filteredImage, sizeof(unsigned char) * rows * cols);
+    cudaMalloc((void**)&d_imageGradient, sizeof(unsigned char) * rows * cols);
+    cudaMalloc((void**)&d_gradientAngle, sizeof(unsigned char) * rows * cols);
+
+    gaussian_blur(d_inputImage, d_filteredImage, rows, cols);
+    sobel_operator(d_filteredImage, d_imageGradient, d_gradientAngle, rows, cols);
+    non_maxima_suppression(d_imageGradient, d_gradientAngle, d_outputImage, rows, cols);
+
+    cudaFree(d_filteredImage);
+    cudaFree(d_imageGradient);
 }
 
 
 int main(int argc, char **argv) {
-    unsigned char *h_inputImage, *d_inputImage, *h_outputImage, *d_outputImage, *d_tempImage;
+    unsigned char *h_inputImage, *d_inputImage, *h_outputImage, *d_outputImage;
 
     std::string input_file;
     std::string output_file;
@@ -170,7 +246,6 @@ int main(int argc, char **argv) {
     const size_t pixelCount = input_image.rows * input_image.cols;
 
     cudaMalloc((void**)&d_inputImage, sizeof(unsigned char) * pixelCount);
-    cudaMalloc((void**)&d_tempImage, sizeof(unsigned char) * pixelCount);
     cudaMalloc((void**)&d_outputImage, sizeof(unsigned char) * pixelCount);
     //cudaMemset(*d_outputImage, 0, pixelCount * sizeof(unsigned char));
     //h_outputImage = (unsigned char*) malloc(sizeof(unsigned char) * pixelCount);
@@ -178,7 +253,7 @@ int main(int argc, char **argv) {
     cudaMemcpy(d_inputImage, h_inputImage, sizeof(unsigned char) * pixelCount, cudaMemcpyHostToDevice);
 
     //launch_kernel(d_inputImage, d_outputImage, input_image.rows, input_image.cols);
-    detect_edges(d_inputImage, d_tempImage, d_outputImage, input_image.rows, input_image.cols);
+    detect_edges(d_inputImage, d_outputImage, input_image.rows, input_image.cols);
     
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
@@ -198,7 +273,6 @@ int main(int argc, char **argv) {
 
     cudaFree(d_inputImage);
     cudaFree(d_outputImage);
-    cudaFree(d_tempImage);
 
     return 0;
 }

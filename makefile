@@ -1,9 +1,6 @@
 CC = nvcc
-
 CFLAGS = -g
-
 LIBS = -lopencv_core -lopencv_highgui
-
 TARGET = edge_detector
 
 default: $(TARGET)
