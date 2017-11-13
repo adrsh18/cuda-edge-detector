@@ -179,7 +179,7 @@ void convolve_2d(unsigned char *h_inputImage, unsigned char *h_filteredImage, in
 
 void sobel_operator(unsigned char *h_filteredImage, unsigned char *h_imageGradient, unsigned char *h_gradientAngle, int rows, int cols) {
 
-    printf("About to launch sobel kernel on GPU\n");
+    printf("About to run sobel operator on CPU\n");
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             sobel_kernel(h_filteredImage, h_imageGradient, h_gradientAngle, rows, cols, 30, i, j);
@@ -189,7 +189,7 @@ void sobel_operator(unsigned char *h_filteredImage, unsigned char *h_imageGradie
 
 void grow_edges(unsigned char *h_edgeMask, unsigned char *h_outputImage, int rows, int cols) {
 
-    printf("About to launch edge grow kernel\n");
+    printf("About to grow edges on CPU\n");
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             edge_grow_kernel(h_edgeMask, h_outputImage, rows, cols, i, j);
@@ -199,7 +199,7 @@ void grow_edges(unsigned char *h_edgeMask, unsigned char *h_outputImage, int row
 
 void non_maxima_suppression(unsigned char *h_imageGradient, unsigned char *h_gradientAngle, unsigned char *h_edgeMask, unsigned char *h_outputImage, int rows, int cols, int high_threshold, int low_threshold) {
 
-    printf("About to launch non maxima suppression kernel\n");
+    printf("About to run non maxima suppression on CPU\n");
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             nms_kernel(h_imageGradient, h_gradientAngle, h_edgeMask, h_outputImage, rows, cols, high_threshold, low_threshold, i, j);
@@ -213,13 +213,12 @@ void gaussian_blur(unsigned char *h_inputImage, unsigned char *h_filteredImage, 
     float h_filter[25] = {2.0, 4.0, 5.0, 4.0, 2.0, 4.0, 9.0, 12.0, 9.0, 4.0, 5.0, 12.0, 15.0, 12.0, 5.0, 4.0, 9.0, 12.0, 9.0, 4.0, 2.0, 4.0, 5.0, 4.0, 2.0};
     
     //img_kernel<<<gridSize, blockSize>>>(h_inputImage, h_outputImage, rows, cols);
-    printf("About to lauch gaussian kernel on GPU\n");
+    printf("About to run gaussian blur on CPU\n");
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             convolve_2d(h_inputImage, h_filteredImage, rows, cols, h_filter, 5, 5, 159.0, i, j);
         }
     }
-    printf("Gaussian kernel completed\n");
 }
 
 void detect_edges(unsigned char *h_inputImage, unsigned char *h_outputImage, int rows, int cols, int high_threshold, int low_threshold) {
