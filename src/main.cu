@@ -12,6 +12,7 @@
 double copy_total = 0.0;
 double malloc_total = 0.0;
 double free_total = 0.0;
+int BLOCK_SIZE = 16;
 
 clock_t main_start, main_end, read_start, read_end, write_start, write_end, in_copy_start, in_copy_end, 
         out_copy_start, out_copy_end, detect_start, detect_end, gauss_start, gauss_end,
@@ -28,7 +29,7 @@ __global__ void img_kernel(unsigned char *d_inputImage, unsigned char *d_outputI
     return;
 }
 
-__global__ void edge_grow_kernel(unsigned char *d_edgeMask, unsigned char *d_outputImage, int rows, int cols) {
+__global__ void edge_grow_kernel(unsigned char *d_edgeMask, unsigned char *d_outputImage, bool *d_done, int rows, int cols) {
     int c = blockIdx.y * blockDim.y + threadIdx.y;
     int r = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -48,37 +49,46 @@ __global__ void edge_grow_kernel(unsigned char *d_edgeMask, unsigned char *d_out
         if (d_edgeMask[neighborOne] == 1) {
             d_edgeMask[neighborOne] = (unsigned char) 2; 
             d_outputImage[neighborOne] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborTwo] == 1) {
             d_edgeMask[neighborTwo] = (unsigned char) 2;
             d_outputImage[neighborTwo] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborThree] == 1) {
             d_edgeMask[neighborThree] = (unsigned char) 2; 
             d_outputImage[neighborThree] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborFour] == 1) {
             d_edgeMask[neighborFour] = (unsigned char) 2;
             d_outputImage[neighborFour] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborFive] == 1) {
             d_edgeMask[neighborFive] = (unsigned char) 2; 
             d_outputImage[neighborFive] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborSix] == 1) {
             d_edgeMask[neighborSix] = (unsigned char) 2;
             d_outputImage[neighborSix] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborSeven] == 1) {
             d_edgeMask[neighborSeven] = (unsigned char) 2; 
             d_outputImage[neighborSeven] = (unsigned char) 255;
+            *d_done = false;
         }
         if (d_edgeMask[neighborEight] == 1) {
             d_edgeMask[neighborEight] = (unsigned char) 2;
             d_outputImage[neighborEight] = (unsigned char) 255;
+            *d_done = false;
         }
     }
 }
+
 
 __global__ void nms_kernel(unsigned char *d_imageGradient, unsigned char *d_gradientAngle, unsigned char *d_edgeMask, unsigned char *d_outputImage, int rows, int cols, int high_threshold, int low_threshold) {
     int c = blockIdx.y * blockDim.y + threadIdx.y;
@@ -237,7 +247,7 @@ __global__ void gaussian_kernel(unsigned char *d_inputImage, unsigned char *d_fi
 }
 
 void sobel_operator(unsigned char *d_filteredImage, unsigned char *d_imageGradient, unsigned char *d_gradientAngle, int rows, int cols) {
-    int block_size = 16;
+    int block_size = BLOCK_SIZE;
 
     const dim3 blockSize(block_size, block_size, 1);
     int xCount = rows / block_size + 1;
@@ -253,16 +263,16 @@ void sobel_operator(unsigned char *d_filteredImage, unsigned char *d_imageGradie
     cudaDeviceSynchronize();
 }
 
-void grow_edges(unsigned char *d_edgeMask, unsigned char *d_outputImage, int rows, int cols) {
-    int block_size = 16;
+void grow_edges(unsigned char *d_edgeMask, unsigned char *d_outputImage, bool *d_done, int rows, int cols) {
+    int block_size = BLOCK_SIZE;
 
     const dim3 blockSize(block_size, block_size, 1);
     int xCount = rows / block_size + 1;
     int yCount = cols / block_size + 1;
     const dim3 gridSize(xCount, yCount, 1);
 
-    printf("About to launch edge grow kernel\n");
-    edge_grow_kernel<<<gridSize, blockSize>>>(d_edgeMask, d_outputImage, rows, cols);
+    //printf("About to launch edge grow kernel\n");
+    edge_grow_kernel<<<gridSize, blockSize>>>(d_edgeMask, d_outputImage, d_done, rows, cols);
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
@@ -271,7 +281,7 @@ void grow_edges(unsigned char *d_edgeMask, unsigned char *d_outputImage, int row
 } 
 
 void non_maxima_suppression(unsigned char *d_imageGradient, unsigned char *d_gradientAngle, unsigned char *d_edgeMask, unsigned char *d_outputImage, int rows, int cols, int high_threshold, int low_threshold) {
-    int block_size = 16;
+    int block_size = BLOCK_SIZE;
 
     const dim3 blockSize(block_size, block_size, 1);
     int xCount = rows / block_size + 1;
@@ -288,7 +298,7 @@ void non_maxima_suppression(unsigned char *d_imageGradient, unsigned char *d_gra
 }    
     
 void gaussian_blur(unsigned char *d_inputImage, unsigned char *d_filteredImage, int rows, int cols) {
-    int block_size = 16;
+    int block_size = BLOCK_SIZE;
     
     const dim3 blockSize(block_size, block_size, 1);
     int xCount = rows / block_size + 1;
@@ -306,11 +316,14 @@ void gaussian_blur(unsigned char *d_inputImage, unsigned char *d_filteredImage, 
 
 void detect_edges(unsigned char *d_inputImage, unsigned char *d_outputImage, int rows, int cols, int high_threshold, int low_threshold) {
     unsigned char *d_filteredImage, *d_imageGradient, *d_gradientAngle, *d_edgeMask;
+    bool *d_done;
+    bool h_done = true;
     clock_t malloc_start = clock();
     cudaMalloc((void**)&d_filteredImage, sizeof(unsigned char) * rows * cols);
     cudaMalloc((void**)&d_imageGradient, sizeof(unsigned char) * rows * cols);
     cudaMalloc((void**)&d_gradientAngle, sizeof(unsigned char) * rows * cols);
     cudaMalloc((void**)&d_edgeMask, sizeof(unsigned char) * rows * cols);
+    cudaMalloc((void**)&d_done, sizeof(bool));
     clock_t malloc_end = clock();
     malloc_total += (double) (malloc_end - malloc_start) / CLOCKS_PER_SEC;
 
@@ -327,8 +340,20 @@ void detect_edges(unsigned char *d_inputImage, unsigned char *d_outputImage, int
     nms_end = clock();
    
     hysteresis_start = clock();
-    for (int i = 0; i < 2; i++)
+    int count = 0;
+    do {
+        count++;
+        h_done = true;
+        cudaMemcpy(d_done, &h_done, sizeof(bool), cudaMemcpyHostToDevice);
+        //kernel
+        grow_edges(d_edgeMask, d_outputImage, d_done, rows, cols);
+        cudaMemcpy(&h_done, d_done, sizeof(bool), cudaMemcpyDeviceToHost);
+    } while (!h_done);
+    printf("Completed hysteresis in %d rounds\n", count);
+/*
+    for (int i = 0; i < 4; i++)
         grow_edges(d_edgeMask, d_outputImage, rows, cols);
+*/
     hysteresis_end = clock();
 
     clock_t free_start = clock();
@@ -336,6 +361,7 @@ void detect_edges(unsigned char *d_inputImage, unsigned char *d_outputImage, int
     cudaFree(d_imageGradient);
     cudaFree(d_gradientAngle);
     cudaFree(d_edgeMask);
+    cudaFree(d_done);
     clock_t free_end = clock();
     free_total += (double) (free_end - free_start) / CLOCKS_PER_SEC;
 }

@@ -1,9 +1,10 @@
 #!/bin/bash
 
-FILES=./eval_images/*
-OUT_DIRECTORY=./eval_out
-PARALLEL=./edge_detector
-SERIAL=./edge_detector_serial
+BASE_DIR=$(dirname $0)
+FILES=${BASE_DIR}/../eval_images/*
+OUT_DIRECTORY=${BASE_DIR}/../eval_out
+PARALLEL=${BASE_DIR}/../edge_detector
+SERIAL=${BASE_DIR}/../edge_detector_serial
 HIGH_THRESHOLD=100
 LOW_THRESHOLD=50
 

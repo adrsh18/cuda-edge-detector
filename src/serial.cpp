@@ -11,7 +11,7 @@ double malloc_total = 0.0, free_total = 0.0;
 clock_t main_start, main_end, read_start, read_end, write_start, write_end, detect_start, detect_end, gauss_start, gauss_end,
         sobel_start, sobel_end, nms_start, nms_end, hysteresis_start, hysteresis_end;
 
-void edge_grow_kernel(unsigned char *h_edgeMask, unsigned char *h_outputImage, int rows, int cols, int r, int c) {
+void edge_grow_kernel(unsigned char *h_edgeMask, unsigned char *h_outputImage, bool *d_done, int rows, int cols, int r, int c) {
 
     int idx = r*cols+c, neighborOne, neighborTwo, neighborThree, neighborFour, neighborFive, neighborSix, neighborSeven, neighborEight;
     if (r >= rows || c >= cols) {
@@ -29,34 +29,42 @@ void edge_grow_kernel(unsigned char *h_edgeMask, unsigned char *h_outputImage, i
         if (h_edgeMask[neighborOne] == 1) {
             h_edgeMask[neighborOne] = (unsigned char) 2; 
             h_outputImage[neighborOne] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborTwo] == 1) {
             h_edgeMask[neighborTwo] = (unsigned char) 2;
             h_outputImage[neighborTwo] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborThree] == 1) {
             h_edgeMask[neighborThree] = (unsigned char) 2; 
             h_outputImage[neighborThree] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborFour] == 1) {
             h_edgeMask[neighborFour] = (unsigned char) 2;
             h_outputImage[neighborFour] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborFive] == 1) {
             h_edgeMask[neighborFive] = (unsigned char) 2; 
             h_outputImage[neighborFive] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborSix] == 1) {
             h_edgeMask[neighborSix] = (unsigned char) 2;
             h_outputImage[neighborSix] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborSeven] == 1) {
             h_edgeMask[neighborSeven] = (unsigned char) 2; 
             h_outputImage[neighborSeven] = (unsigned char) 255;
+            *d_done = false;
         }
         if (h_edgeMask[neighborEight] == 1) {
             h_edgeMask[neighborEight] = (unsigned char) 2;
             h_outputImage[neighborEight] = (unsigned char) 255;
+            *d_done = false;
         }
     }
 }
@@ -187,12 +195,12 @@ void sobel_operator(unsigned char *h_filteredImage, unsigned char *h_imageGradie
     }
 }
 
-void grow_edges(unsigned char *h_edgeMask, unsigned char *h_outputImage, int rows, int cols) {
+void grow_edges(unsigned char *h_edgeMask, unsigned char *h_outputImage, bool *h_done, int rows, int cols) {
 
-    printf("About to grow edges on CPU\n");
+    //printf("About to grow edges on CPU\n");
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            edge_grow_kernel(h_edgeMask, h_outputImage, rows, cols, i, j);
+            edge_grow_kernel(h_edgeMask, h_outputImage, h_done, rows, cols, i, j);
         }
     }
 } 
@@ -223,7 +231,8 @@ void gaussian_blur(unsigned char *h_inputImage, unsigned char *h_filteredImage, 
 
 void detect_edges(unsigned char *h_inputImage, unsigned char *h_outputImage, int rows, int cols, int high_threshold, int low_threshold) {
     unsigned char *h_filteredImage, *h_imageGradient, *h_gradientAngle, *h_edgeMask;
-    
+    bool *h_done;
+    h_done = (bool*) malloc(sizeof(bool));
     clock_t malloc_start = clock();
     h_filteredImage = (unsigned char*) malloc(sizeof(unsigned char) * rows * cols);
     h_imageGradient = (unsigned char*) malloc(sizeof(unsigned char) * rows * cols);
@@ -245,8 +254,17 @@ void detect_edges(unsigned char *h_inputImage, unsigned char *h_outputImage, int
     nms_end = clock();
 
     hysteresis_start = clock();
-    for (int i = 0; i < 2; i++)
+    int count = 0;
+    do {
+        count++;
+        *h_done = true;
+        grow_edges(h_edgeMask, h_outputImage, h_done, rows, cols);
+    } while (!*h_done);
+    printf("Completed hysteresis in %d rounds\n", count);
+/*
+    for (int i = 0; i < 4; i++)
         grow_edges(h_edgeMask, h_outputImage, rows, cols);
+*/
     hysteresis_end = clock();
 
     clock_t free_start = clock();

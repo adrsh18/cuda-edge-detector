@@ -1,0 +1,282 @@
+
+Processing porsche1.png in Parallel..
+------------------------------------
+About to lauch gaussian kernel on GPU
+About to launch sobel kernel on GPU
+About to launch non maxima suppression kernel
+Completed hysteresis in 78 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.664458
+Time spent in detect_edges: 2.643544
+|-- Time spent in gaussian_blur: 0.425604
+|-- Time spent in sobel_operator: 0.227229
+|-- Time spent in non_maxima_suppression: 0.173694
+|-- Time spent in hysteresis: 1.782721
+Time spent in writing output image: 0.315408
+Time spent in main : 3.838615
+--------------------------------------------------
+Time spent in cudaMalloc calls: 0.002483
+Time spent in cudaMemcpy calls: 0.103961
+Time spent in cudaFree calls: 0.040684
+------------------------------------
+
+Processing porsche1.png in Serial..
+About to run gaussian blur on CPU
+About to run sobel operator on CPU
+About to run non maxima suppression on CPU
+Completed hysteresis in 77 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.659838
+Time spent in detect_edges: 82.075813
+|-- Time spent in gaussian_blur: 14.383696
+|-- Time spent in sobel_operator: 14.023690
+|-- Time spent in non_maxima_suppression: 2.063763
+|-- Time spent in hysteresis: 51.597939
+Time spent in writing output image: 0.309820
+Time spent in main : 83.047131
+--------------------------------------------------
+Time spent in malloc calls: 0.006436
+Time spent in free calls: 0.001555
+------------------------------------
+
+
+Processing porsche2.png in Parallel..
+------------------------------------
+About to lauch gaussian kernel on GPU
+About to launch sobel kernel on GPU
+About to launch non maxima suppression kernel
+Completed hysteresis in 106 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.390292
+Time spent in detect_edges: 1.498691
+|-- Time spent in gaussian_blur: 0.221682
+|-- Time spent in sobel_operator: 0.113833
+|-- Time spent in non_maxima_suppression: 0.086760
+|-- Time spent in hysteresis: 1.058353
+Time spent in writing output image: 0.173091
+Time spent in main : 2.228064
+--------------------------------------------------
+Time spent in cudaMalloc calls: 0.002096
+Time spent in cudaMemcpy calls: 0.051670
+Time spent in cudaFree calls: 0.020758
+------------------------------------
+
+Processing porsche2.png in Serial..
+About to run gaussian blur on CPU
+About to run sobel operator on CPU
+About to run non maxima suppression on CPU
+Completed hysteresis in 104 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.370272
+Time spent in detect_edges: 50.524025
+|-- Time spent in gaussian_blur: 7.176742
+|-- Time spent in sobel_operator: 7.020676
+|-- Time spent in non_maxima_suppression: 1.042941
+|-- Time spent in hysteresis: 35.280126
+Time spent in writing output image: 0.163259
+Time spent in main : 51.058431
+--------------------------------------------------
+Time spent in malloc calls: 0.003249
+Time spent in free calls: 0.000929
+------------------------------------
+
+
+Processing porsche3.png in Parallel..
+------------------------------------
+About to lauch gaussian kernel on GPU
+About to launch sobel kernel on GPU
+About to launch non maxima suppression kernel
+Completed hysteresis in 114 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.203383
+Time spent in detect_edges: 0.827333
+|-- Time spent in gaussian_blur: 0.110807
+|-- Time spent in sobel_operator: 0.061595
+|-- Time spent in non_maxima_suppression: 0.046039
+|-- Time spent in hysteresis: 0.598739
+Time spent in writing output image: 0.087559
+Time spent in main : 1.256283
+--------------------------------------------------
+Time spent in cudaMalloc calls: 0.002093
+Time spent in cudaMemcpy calls: 0.025882
+Time spent in cudaFree calls: 0.010799
+------------------------------------
+
+Processing porsche3.png in Serial..
+About to run gaussian blur on CPU
+About to run sobel operator on CPU
+About to run non maxima suppression on CPU
+Completed hysteresis in 114 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.190509
+Time spent in detect_edges: 27.193487
+|-- Time spent in gaussian_blur: 3.583195
+|-- Time spent in sobel_operator: 3.490118
+|-- Time spent in non_maxima_suppression: 0.508021
+|-- Time spent in hysteresis: 19.610375
+Time spent in writing output image: 0.087822
+Time spent in main : 27.472333
+--------------------------------------------------
+Time spent in malloc calls: 0.001600
+Time spent in free calls: 0.000514
+------------------------------------
+
+
+Processing porsche4.png in Parallel..
+------------------------------------
+About to lauch gaussian kernel on GPU
+About to launch sobel kernel on GPU
+About to launch non maxima suppression kernel
+Completed hysteresis in 118 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.100992
+Time spent in detect_edges: 0.460021
+|-- Time spent in gaussian_blur: 0.056349
+|-- Time spent in sobel_operator: 0.030564
+|-- Time spent in non_maxima_suppression: 0.023037
+|-- Time spent in hysteresis: 0.344116
+Time spent in writing output image: 0.045492
+Time spent in main : 0.721136
+--------------------------------------------------
+Time spent in cudaMalloc calls: 0.001966
+Time spent in cudaMemcpy calls: 0.012612
+Time spent in cudaFree calls: 0.005768
+------------------------------------
+
+Processing porsche4.png in Serial..
+About to run gaussian blur on CPU
+About to run sobel operator on CPU
+About to run non maxima suppression on CPU
+Completed hysteresis in 118 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.097812
+Time spent in detect_edges: 14.099543
+|-- Time spent in gaussian_blur: 1.789618
+|-- Time spent in sobel_operator: 1.725889
+|-- Time spent in non_maxima_suppression: 0.244971
+|-- Time spent in hysteresis: 10.337969
+Time spent in writing output image: 0.047323
+Time spent in main : 14.244912
+--------------------------------------------------
+Time spent in malloc calls: 0.000806
+Time spent in free calls: 0.000459
+------------------------------------
+
+
+Processing porsche5.png in Parallel..
+------------------------------------
+About to lauch gaussian kernel on GPU
+About to launch sobel kernel on GPU
+About to launch non maxima suppression kernel
+Completed hysteresis in 84 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.049321
+Time spent in detect_edges: 0.184741
+|-- Time spent in gaussian_blur: 0.026223
+|-- Time spent in sobel_operator: 0.014246
+|-- Time spent in non_maxima_suppression: 0.010580
+|-- Time spent in hysteresis: 0.129774
+Time spent in writing output image: 0.024369
+Time spent in main : 0.348476
+--------------------------------------------------
+Time spent in cudaMalloc calls: 0.001770
+Time spent in cudaMemcpy calls: 0.006498
+Time spent in cudaFree calls: 0.003315
+------------------------------------
+
+Processing porsche5.png in Serial..
+About to run gaussian blur on CPU
+About to run sobel operator on CPU
+About to run non maxima suppression on CPU
+Completed hysteresis in 84 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.049666
+Time spent in detect_edges: 5.650766
+|-- Time spent in gaussian_blur: 0.894800
+|-- Time spent in sobel_operator: 0.853308
+|-- Time spent in non_maxima_suppression: 0.119508
+|-- Time spent in hysteresis: 3.782397
+Time spent in writing output image: 0.025568
+Time spent in main : 5.726171
+--------------------------------------------------
+Time spent in malloc calls: 0.000452
+Time spent in free calls: 0.000391
+------------------------------------
+
+
+Processing porsche6.png in Parallel..
+------------------------------------
+About to lauch gaussian kernel on GPU
+About to launch sobel kernel on GPU
+About to launch non maxima suppression kernel
+Completed hysteresis in 87 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.025403
+Time spent in detect_edges: 0.101941
+|-- Time spent in gaussian_blur: 0.012907
+|-- Time spent in sobel_operator: 0.006907
+|-- Time spent in non_maxima_suppression: 0.005142
+|-- Time spent in hysteresis: 0.073918
+Time spent in writing output image: 0.013521
+Time spent in main : 0.227019
+--------------------------------------------------
+Time spent in cudaMalloc calls: 0.001956
+Time spent in cudaMemcpy calls: 0.002918
+Time spent in cudaFree calls: 0.002001
+------------------------------------
+
+Processing porsche6.png in Serial..
+About to run gaussian blur on CPU
+About to run sobel operator on CPU
+About to run non maxima suppression on CPU
+Completed hysteresis in 68 rounds
+Done
+
+Profiling Summary:
+==================================================
+Time spent in reading input image: 0.025857
+Time spent in detect_edges: 2.503906
+|-- Time spent in gaussian_blur: 0.446960
+|-- Time spent in sobel_operator: 0.425587
+|-- Time spent in non_maxima_suppression: 0.058327
+|-- Time spent in hysteresis: 1.572489
+Time spent in writing output image: 0.013608
+Time spent in main : 2.543542
+--------------------------------------------------
+Time spent in malloc calls: 0.000218
+Time spent in free calls: 0.000373
+------------------------------------
+
